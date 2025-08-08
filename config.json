@@ -1,0 +1,20 @@
+{
+    "$schema": "2.0",
+    "secret_key": "Nemo_trader_keys",
+    "telegram_bot_token": "6218798734:AAECJcdJpFTv4Zg9s8W0t1Lf52kQZnhFTsA",
+    "telegram_chat_id": "5459092957",
+    "debug": false,
+    "host": "0.0.0.0",
+    "port": 8087,
+    "mt5_path": "C:\\Program Files\\MetaTrader 5\\terminal64.exe",
+    "rate_limit_per_minute": 300,
+    "request_timeout": 30,
+    "log_level": "INFO",
+    "features": {
+        "rate_limiting": true,
+        "request_logging": true,
+        "metrics_collection": true,
+        "input_validation": true,
+        "middleware": true
+    }
+}

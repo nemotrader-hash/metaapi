@@ -1,8 +1,8 @@
 {
     "$schema": "2.0",
-    "secret_key": "Nemo_trader_keys",
-    "telegram_bot_token": "6218798734:AAECJcdJpFTv4Zg9s8W0t1Lf52kQZnhFTsA",
-    "telegram_chat_id": "5459092957",
+    "secret_key": "",
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
     "debug": false,
     "host": "0.0.0.0",
     "port": 8087,
@@ -17,4 +17,5 @@
         "input_validation": true,
         "middleware": true
     }
+
 }

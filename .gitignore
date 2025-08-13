@@ -51,8 +51,17 @@ Thumbs.db
 *.log
 log/*.log
 
-# Local config (if you want to keep secrets out of git)
+# Configuration files with sensitive data
+config.json
 config_local.json
+config_production.json
+config_live.json
+
+# Instance configurations (may contain sensitive data)
+instances/
+instances/*.json
+instances/*.log
+instances/*.pid
 
 # Temporary files
 *.tmp

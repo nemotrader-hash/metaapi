@@ -48,7 +48,7 @@ class MT5ConnectionRequest:
 class MarketOrderRequest:
     """Request model for creating market orders."""
     symbol: str
-    stake_amount: float
+    stake_amount: float  # USD risk amount (will be converted to lot size)
     side: str
     stoploss: Optional[float] = None
     takeprofit: Optional[float] = None
@@ -60,7 +60,9 @@ class MarketOrderRequest:
         if not self.symbol:
             raise ValueError("Symbol is required")
         if not isinstance(self.stake_amount, (int, float)) or self.stake_amount <= 0:
-            raise ValueError("Stake amount must be a positive number")
+            raise ValueError("Stake amount (USD risk) must be a positive number")
+        if not (1.0 <= self.stake_amount <= 1000000.0):
+            raise ValueError("Stake amount must be between $1 and $100,000 USD")
         if self.side.lower() not in ['long', 'short', 'buy', 'sell']:
             raise ValueError("Side must be one of: long, short, buy, sell")
         if self.stoploss is not None and not isinstance(self.stoploss, (int, float)):

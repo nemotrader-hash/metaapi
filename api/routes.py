@@ -93,6 +93,188 @@ def init_routes(app):
             'data': metrics_data
         }), 200
 
+    @app.route('/mt5/info', methods=['GET'])
+    @authenticate
+    @rate_limit()
+    @collect_metrics()
+    def get_mt5_info():
+        """Get MT5 terminal information and status."""
+        try:
+            import MetaTrader5 as mt5
+            
+            # Get terminal and account info directly from MetaTrader5
+            terminal_info = mt5.terminal_info()
+            account_info = mt5.account_info()
+            
+            # Convert NamedTuple to dict for JSON serialization
+            terminal_dict = dict(terminal_info._asdict()) if terminal_info else None
+            account_dict = dict(account_info._asdict()) if account_info else None
+            
+            return jsonify({
+                "status": "success",
+                "message": "OK",
+                "data": {
+                    "terminal_info": terminal_dict,
+                    "account_info": account_dict,
+                    "connection_status": "connected" if terminal_info else "disconnected",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting MT5 info: {e}")
+            return jsonify({
+                "error": f"Failed to get MT5 info: {str(e)}",
+                "message": "NOTOK"
+            }), 500
+
+    @app.route('/mt5/symbols', methods=['GET'])
+    @authenticate
+    @rate_limit()
+    @collect_metrics()
+    def get_mt5_symbols():
+        """Get available MT5 symbols."""
+        try:
+            import MetaTrader5 as mt5
+            
+            # Get all available symbols
+            symbols = mt5.symbols_get()
+            
+            if symbols:
+                # Convert symbols to list of dicts with basic info
+                symbols_list = []
+                for symbol in symbols:
+                    symbols_list.append({
+                        "name": symbol.name,
+                        "description": symbol.description,
+                        "path": symbol.path,
+                        "trade_mode": symbol.trade_mode,
+                        "visible": symbol.visible,
+                        "select": symbol.select
+                    })
+            else:
+                symbols_list = []
+            
+            return jsonify({
+                "status": "success",
+                "message": "OK",
+                "data": {
+                    "symbols": symbols_list,
+                    "symbol_count": len(symbols_list),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting MT5 symbols: {e}")
+            return jsonify({
+                "error": f"Failed to get MT5 symbols: {str(e)}",
+                "message": "NOTOK"
+            }), 500
+
+    @app.route('/mt5/positions', methods=['GET'])
+    @authenticate
+    @rate_limit()
+    @collect_metrics()
+    def get_mt5_positions():
+        """Get current open positions."""
+        try:
+            import MetaTrader5 as mt5
+            
+            # Get all open positions
+            positions = mt5.positions_get()
+            
+            if positions:
+                # Convert positions to list of dicts
+                positions_list = []
+                for position in positions:
+                    positions_list.append({
+                        "ticket": position.ticket,
+                        "time": position.time,
+                        "symbol": position.symbol,
+                        "type": position.type,
+                        "volume": position.volume,
+                        "price_open": position.price_open,
+                        "sl": position.sl,
+                        "tp": position.tp,
+                        "price_current": position.price_current,
+                        "swap": position.swap,
+                        "profit": position.profit,
+                        "comment": position.comment,
+                        "identifier": position.identifier,
+                        "reason": position.reason
+                    })
+            else:
+                positions_list = []
+            
+            return jsonify({
+                "status": "success",
+                "message": "OK",
+                "data": {
+                    "positions": positions_list,
+                    "position_count": len(positions_list),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting MT5 positions: {e}")
+            return jsonify({
+                "error": f"Failed to get MT5 positions: {str(e)}",
+                "message": "NOTOK"
+            }), 500
+
+    @app.route('/mt5/orders', methods=['GET'])
+    @authenticate
+    @rate_limit()
+    @collect_metrics()
+    def get_mt5_orders():
+        """Get current pending orders."""
+        try:
+            import MetaTrader5 as mt5
+            
+            # Get all pending orders
+            orders = mt5.orders_get()
+            
+            if orders:
+                # Convert orders to list of dicts
+                orders_list = []
+                for order in orders:
+                    orders_list.append({
+                        "ticket": order.ticket,
+                        "time_setup": order.time_setup,
+                        "symbol": order.symbol,
+                        "type": order.type,
+                        "volume_initial": order.volume_initial,
+                        "volume_current": order.volume_current,
+                        "price_open": order.price_open,
+                        "sl": order.sl,
+                        "tp": order.tp,
+                        "price_current": order.price_current,
+                        "comment": order.comment,
+                        "magic": order.magic,
+                        "time_expiration": order.time_expiration
+                    })
+            else:
+                orders_list = []
+            
+            return jsonify({
+                "status": "success",
+                "message": "OK",
+                "data": {
+                    "orders": orders_list,
+                    "order_count": len(orders_list),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting MT5 orders: {e}")
+            return jsonify({
+                "error": f"Failed to get MT5 orders: {str(e)}",
+                "message": "NOTOK"
+            }), 500
+
     @app.route('/initialize_mt5_connection', methods=['POST'])
     @authenticate
     @rate_limit()
@@ -167,11 +349,11 @@ def init_routes(app):
             except Exception as e:
                 logger.warning(f"Failed to select symbols due to error: {e}")
 
-            # Create the market order - the method now returns dict but we ignore it for compatibility
+            # Create the market order - stake_amount is USD risk, not lot size
             result = mt5_interface.create_market_order_mt5(
                 symbol=symbol, 
                 direction=direction.lower(),
-                lot_size=stake_amount
+                stake_amount=stake_amount  # This is USD risk amount, will be converted to lot size
             )
             
         except (MT5ConnectionError, MT5TradingError, ValueError) as e:

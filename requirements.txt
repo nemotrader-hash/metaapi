@@ -33,3 +33,6 @@ flake8==6.1.0
 
 # Security
 cryptography==41.0.8
+
+# Process management for multi-instance support
+psutil==5.9.6

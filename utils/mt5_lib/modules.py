@@ -359,8 +359,8 @@ class MT5_Interface():
     
 
     def create_market_order_mt5(self, symbol: str, stoploss: Optional[float] = None, takeprofit: Optional[float] = None,
-                                direction: str = "long", lot_size: float = 0.01, deviation: int = 5,
-                                magic: int = 23400) -> Dict[str, Any]:
+                                direction: str = "long", stake_amount: float = None, lot_size: float = None, 
+                                deviation: int = 5, magic: int = 23400) -> Dict[str, Any]:
         """
         Create a market order with enhanced error handling and validation.
         
@@ -369,7 +369,8 @@ class MT5_Interface():
             stoploss: Stop loss price
             takeprofit: Take profit price
             direction: Order direction ('long', 'short', 'buy', 'sell')
-            lot_size: Volume to trade
+            stake_amount: USD risk amount to be converted to lot size
+            lot_size: Direct lot size (if provided, overrides stake_amount)
             deviation: Maximum price deviation
             magic: Magic number for the order
             
@@ -393,6 +394,22 @@ class MT5_Interface():
         else:
             raise MT5TradingError(f"Invalid direction: {direction}. Must be 'long', 'short', 'buy', or 'sell'")
         
+        # Calculate lot size from stake amount or use provided lot size
+        if lot_size is None:
+            if stake_amount is None:
+                raise MT5TradingError("Either stake_amount (USD risk) or lot_size must be provided")
+            
+            # Calculate lot size from USD stake amount
+            try:
+                calculated_lot_size = self.calculate_lot_size(symbol, stake_amount)
+                logger.info(f"Calculated lot size {calculated_lot_size} from stake amount ${stake_amount}")
+                lot_size = calculated_lot_size
+            except Exception as e:
+                logger.error(f"Failed to calculate lot size from stake amount: {e}")
+                raise MT5TradingError(f"Failed to calculate lot size from stake amount ${stake_amount}: {e}")
+        else:
+            logger.info(f"Using provided lot size: {lot_size}")
+        
         # Validate lot size
         symbol_info = mt5.symbol_info(symbol)
         if not symbol_info:
@@ -403,7 +420,7 @@ class MT5_Interface():
         lot_step = symbol_info.volume_step
         
         if lot_size < min_lot or lot_size > max_lot:
-            raise MT5TradingError(f"Lot size {lot_size} is outside allowed range [{min_lot}, {max_lot}]")
+            raise MT5TradingError(f"Calculated lot size {lot_size} is outside allowed range [{min_lot}, {max_lot}]")
         
         # Round lot size to step
         lot_size = round(lot_size / lot_step) * lot_step

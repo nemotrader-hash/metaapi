@@ -35,6 +35,16 @@ def validate_lot_size(lot_size: Union[float, int]) -> bool:
         return False
 
 
+def validate_usd_risk_amount(risk_amount: Union[float, int]) -> bool:
+    """Validate USD risk amount for position sizing."""
+    try:
+        risk = float(risk_amount)
+        # Allow risk amounts from $1 to $1,000,000 USD
+        return 1.0 <= risk <= 1000000.0
+    except (ValueError, TypeError):
+        return False
+
+
 def validate_price(price: Union[float, int]) -> bool:
     """Validate price value."""
     try:
@@ -155,7 +165,22 @@ def validate_mt5_connection_data(data: Dict[str, Any]) -> MT5ConnectionRequest:
 
 
 def validate_market_order_data(data: Dict[str, Any]) -> MarketOrderRequest:
-    """Validate market order request data."""
+    """
+    Validate market order request data.
+    
+    Args:
+        data: Dictionary containing order data with stake_amount as USD risk amount
+        
+    Returns:
+        MarketOrderRequest: Validated order request object
+        
+    Raises:
+        ValidationError: If validation fails
+        
+    Note:
+        stake_amount is expected to be a USD risk amount ($1-$100,000)
+        that will be automatically converted to appropriate lot size.
+    """
     try:
         symbol = data.get('symbol')
         stake_amount = data.get('stake_amount')
@@ -164,8 +189,8 @@ def validate_market_order_data(data: Dict[str, Any]) -> MarketOrderRequest:
         if not validate_symbol(symbol):
             raise ValidationError("Invalid symbol format")
         
-        if not validate_lot_size(stake_amount):
-            raise ValidationError("Invalid stake amount")
+        if not validate_usd_risk_amount(stake_amount):
+            raise ValidationError("Invalid stake amount - must be between $1 and $100,000 USD")
         
         if side.lower() not in ['long', 'short', 'buy', 'sell']:
             raise ValidationError("Invalid order side")

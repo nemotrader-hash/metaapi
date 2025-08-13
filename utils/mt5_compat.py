@@ -15,19 +15,21 @@ class MT5_Interface_Compat(EnhancedMT5Interface):
     
     def create_market_order_mt5(self, symbol: str, stoploss: Optional[float] = None, 
                                 takeprofit: Optional[float] = None, direction: str = "long", 
-                                lot_size: float = 0.01, deviation: int = 5,
+                                stake_amount: float = None, lot_size: float = None, deviation: int = 5,
                                 magic: int = 23400) -> bool:
         """
         Override to return boolean like original API instead of dict.
         This maintains backward compatibility with existing code.
+        Now properly handles stake_amount (USD risk) to lot size conversion.
         """
         try:
-            # Call the enhanced version
+            # Call the enhanced version with proper parameter handling
             result = super().create_market_order_mt5(
                 symbol=symbol,
                 stoploss=stoploss,
                 takeprofit=takeprofit,
                 direction=direction,
+                stake_amount=stake_amount,
                 lot_size=lot_size,
                 deviation=deviation,
                 magic=magic

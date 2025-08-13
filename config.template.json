@@ -1,3 +1,4 @@
+<<<<<<< HEAD:config.template.json
 {
     "$schema": "2.0",
     "secret_key": "your-secret-key-here",
@@ -18,3 +19,26 @@
         "middleware": false
     }
 }
+=======
+{
+    "$schema": "2.0",
+    "secret_key": "",
+    "telegram_bot_token": "",
+    "telegram_chat_id": "",
+    "debug": false,
+    "host": "0.0.0.0",
+    "port": 8087,
+    "mt5_path": "C:\\Program Files\\MetaTrader 5\\terminal64.exe",
+    "rate_limit_per_minute": 300,
+    "request_timeout": 30,
+    "log_level": "INFO",
+    "features": {
+        "rate_limiting": true,
+        "request_logging": true,
+        "metrics_collection": true,
+        "input_validation": true,
+        "middleware": true
+    }
+
+}
+>>>>>>> 8a6dd7250a34161c6fa22ffc1be5b317eafa6cad:config.json

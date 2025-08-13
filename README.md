@@ -46,37 +46,36 @@ MetaApi/
 
 ## 🚀 Quick Start
 
-### 1. Setup Configuration
-
+### Option 1: Automated Setup (Recommended)
 ```bash
-# Copy template and edit with your details
-cp config.template.json config.json
-# Edit config.json with your actual values (see SETUP.md for details)
-```
+# Run setup script for easy configuration
+python3 setup.py
 
-**🔐 Important**: Your `config.json` with real secrets is automatically ignored by git!
-
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure
-Update `config.json` or use environment variables:
-```bash
-export SECRET_KEY="your-secret-key"
-export TELEGRAM_BOT_TOKEN="your-bot-token"
-export TELEGRAM_CHAT_ID="your-chat-id"
-```
-
-### 4. Run Application
-
-**New Organized Version (Recommended):**
-```bash
+# Copy the created config and start
+cp config.production.json config.json
 python3 app.py
 ```
 
-**Original Version (Still Available):**
+### Option 2: Manual Setup
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Configure using one of these methods:
+
+# Method A: JSON Configuration
+cp config.template.json config.json
+# Edit config.json with your actual credentials
+
+# Method B: Environment Variables
+cp .env.example .env
+# Edit .env with your actual credentials
+
+# 3. Run application
+python3 app.py
+```
+
+### Option 3: Original Version (Still Available)
 ```bash
 python3 meta_api.py
 ```
@@ -99,7 +98,7 @@ data = {
 response = requests.post("http://localhost:8087/initialize_mt5_connection", 
                         headers=headers, json=data)
 
-# Create Orders - SAME REQUEST FORMAT  
+# Create Market Orders - SAME REQUEST FORMAT  
 data = {
     "symbol": "EURUSD",
     "stake_amount": 100.0,  # USD risk amount (automatically converted to lot size)
@@ -108,9 +107,38 @@ data = {
 response = requests.post("http://localhost:8087/create_mt5_orders", 
                         headers=headers, json=data)
 
+# NEW: Place Limit Orders
+data = {
+    "order_type": "BUY_LIMIT",
+    "symbol": "EURUSD", 
+    "volume": 0.1,
+    "price": 1.0850,
+    "stop_loss": 1.0800,
+    "take_profit": 1.0900
+}
+response = requests.post("http://localhost:8087/place_limit_order", 
+                        headers=headers, json=data)
+
+# Get Positions
+response = requests.get("http://localhost:8087/get_positions?symbol=EURUSD", 
+                       headers=headers)
+
+# Get Account Info
+response = requests.get("http://localhost:8087/get_account_info", 
+                       headers=headers)
+
 # Close Orders - SAME REQUEST FORMAT
 data = {"symbol": "EURUSD"}
 response = requests.post("http://localhost:8087/close_mt5_orders", 
+                        headers=headers, json=data)
+
+# Modify Position SL/TP
+data = {
+    "ticket": 123456789,
+    "stop_loss": 1.0750,
+    "take_profit": 1.0950
+}
+response = requests.post("http://localhost:8087/modify_position_sltp", 
                         headers=headers, json=data)
 
 # Telegram Alerts - SAME REQUEST FORMAT
@@ -125,31 +153,37 @@ response = requests.post("http://localhost:8087/send_telegram_alert",
 
 ## 📚 API Endpoints
 
-### 🔄 Original Endpoints (Enhanced)
-| Endpoint | Method | Description | Enhanced Features |
-|----------|--------|-------------|-------------------|
-| `/` | GET | Welcome message | ✅ Metrics collection |
-| `/initialize_mt5_connection` | POST | Connect to MT5 | ✅ Rate limiting, validation, logging |
-| `/create_mt5_orders` | POST | Create market orders | ✅ Rate limiting, validation, metrics |
-| `/close_mt5_orders` | POST | Close positions | ✅ Rate limiting, validation, logging |
-| `/send_telegram_alert` | POST | Send alerts | ✅ Rate limiting, validation, metrics |
-
-### 🆕 New Enhanced Endpoints
+### 🔄 Original Endpoints (Core Trading)
 | Endpoint | Method | Description | Features |
 |----------|--------|-------------|----------|
-| `/health` | GET | Service health check | Real-time status, feature flags |
-| `/metrics` | GET | API performance metrics | Request counts, response times, errors |
-| `/mt5/info` | GET | MT5 terminal & account info | Terminal status, account details, connection status |
-| `/mt5/symbols` | GET | Available trading symbols | All symbols with metadata, trade modes |
-| `/mt5/positions` | GET | Current open positions | Real-time position data with P&L |
-| `/mt5/orders` | GET | Pending orders | All pending orders with details |
+| `/` | GET | Welcome message | ✅ Simple health check |
+| `/initialize_mt5_connection` | POST | Connect to MT5 | ✅ Authentication, validation |
+| `/create_mt5_orders` | POST | Create market orders | ✅ USD risk-based position sizing |
+| `/close_mt5_orders` | POST | Close positions | ✅ Symbol-based position closing |
+| `/send_telegram_alert` | POST | Send alerts | ✅ Formatted notifications |
 
-**All original endpoints maintain exact same request/response format while gaining enhanced features!**
+### 🆕 Advanced MT5 Trading Endpoints
+| Endpoint | Method | Description | Features |
+|----------|--------|-------------|----------|
+| `/place_limit_order` | POST | Place limit/stop orders | ✅ Full order customization |
+| `/get_positions` | GET | Get open positions | ✅ Symbol filtering, detailed data |
+| `/get_account_info` | GET | Account information | ✅ Balance, equity, margin data |
+| `/cancel_all_orders` | POST | Cancel pending orders | ✅ Bulk order cancellation |
+| `/modify_position_sltp` | POST | Modify SL/TP | ✅ Position-specific updates |
+| `/get_symbol_info` | GET | Symbol specifications | ✅ Spread, volume limits, etc. |
+| `/get_terminal_info` | GET | MT5 terminal status | ✅ Connection, build info |
+
+### 🔧 System Endpoints
+| Endpoint | Method | Description | Features |
+|----------|--------|-------------|----------|
+| `/health` | GET | Service health check | ✅ Real-time status |
+
+**All endpoints maintain consistent authentication and error handling!**
 
 ## 🛡️ Features
 
 - **✅ Backward Compatible**: All existing requests work unchanged
-- **🏗️ Clean Architecture**: Organized, maintainable code structure
+- **🏗️ Clean Architecture**: Organized, maintainable code structure  
 - **🔧 Enhanced Error Handling**: Custom exceptions and detailed errors
 - **📝 Input Validation**: Comprehensive request validation
 - **💰 Smart Position Sizing**: Automatic USD risk to lot size conversion
@@ -157,6 +191,7 @@ response = requests.post("http://localhost:8087/send_telegram_alert",
 - **📊 Logging**: Structured logging with request tracking
 - **🌐 Environment Support**: JSON config + environment variables
 - **📖 Type Safe**: Full type hints throughout
+- **🎯 Advanced Trading**: Limit orders, position management, account monitoring
 
 ## 💰 **Smart Position Sizing**
 
@@ -274,18 +309,12 @@ This will show:
 
 ## 📁 Key Files
 
-- **`app.py`** - Main application (new organized version)
+- **`app.py`** - Main application (enhanced, no middleware)
 - **`meta_api.py`** - Original API (preserved for compatibility)
-- **`launcher.py`** - Multi-instance launcher
+- **`api/routes.py`** - All API endpoints with new MT5 features
+- **`config.json`** - Configuration file
 - **`requirements.txt`** - Python dependencies
-- **`SETUP.md`** - Detailed setup guide
-
-### 🔧 Configuration Files
-
-- **`config.template.json`** - ✅ **Safe template** (copy this to create your config)
-- **`config.test.json`** - ✅ **Test config** with dummy values (safe for testing)
-- **`config.json`** - 🔐 **Your actual config** (automatically ignored by git)
-- **`config/config.example.json`** - ✅ **Another example** in config directory
+- **`utils/mt5_lib/`** - Enhanced MT5 interface with trading features
 
 ## 🔧 Enhanced Configuration
 
@@ -303,11 +332,11 @@ This will show:
     "request_timeout": 30,
     "log_level": "INFO",
     "features": {
-        "rate_limiting": true,
+        "rate_limiting": false,
         "request_logging": true,
-        "metrics_collection": true,
+        "metrics_collection": false,
         "input_validation": true,
-        "middleware": true
+        "middleware": false
     }
 }
 ```
@@ -318,18 +347,20 @@ export SECRET_KEY="your-secret-key"
 export TELEGRAM_BOT_TOKEN="your-bot-token"
 export TELEGRAM_CHAT_ID="your-chat-id"
 export RATE_LIMIT_PER_MINUTE=300
-export RATE_LIMITING=true
+export RATE_LIMITING=false
 export REQUEST_LOGGING=true
-export METRICS_COLLECTION=true
+export METRICS_COLLECTION=false
 ```
 
-**Option 3: Copy Example Files**
+**Option 3: Copy Template Files**
 ```bash
 # For JSON config
-cp config/config.example.json config.json
+cp config.template.json config.json
+# Edit config.json with your actual credentials
 
 # For environment config  
-cp config/env.example .env
+cp .env.example .env
+# Edit .env with your actual credentials
 ```
 
 ## 🎯 Benefits

@@ -16,7 +16,6 @@ from flask import Flask
 from api.routes import init_routes
 from config.config_manager import ConfigManager
 from core.exceptions import ConfigurationError
-from utils.middleware import init_middleware
 from log.logger import setup_logger
 
 def create_app(config_file: str = None, instance_name: str = None):
@@ -45,9 +44,7 @@ def create_app(config_file: str = None, instance_name: str = None):
     app = Flask(__name__)
     app.config['INSTANCE_NAME'] = instance_name or 'default'
     
-    # Initialize middleware (rate limiting, logging, metrics, error handling)
-    init_middleware(app)
-    logger.info(f"{instance_context}Middleware initialized - rate limiting, logging, metrics enabled")
+    # No middleware initialization (kept simple)
     
     # Initialize routes with enhanced validation and middleware
     init_routes(app)

@@ -4,7 +4,7 @@ Provides validation functions for API requests and data sanitization.
 """
 
 import re
-from typing import Any, Dict, Optional, List, Union
+from typing import Any, Dict, List, Union
 from functools import wraps
 from flask import request, jsonify
 from core.exceptions import ValidationError
@@ -85,56 +85,9 @@ def sanitize_string(value: str, max_length: int = 255) -> str:
 
 
 def validate_json_request(required_fields: List[str] = None, model_class=None):
-    """Decorator for validating JSON requests."""
+    """Deprecated middleware-style validator (kept for compatibility, unused)."""
     def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Check if request contains JSON
-            if not request.is_json:
-                return jsonify({
-                    "error": "ValidationError",
-                    "message": "Request must contain valid JSON",
-                    "status": "NOTOK"
-                }), 400
-            
-            data = request.get_json()
-            if not data:
-                return jsonify({
-                    "error": "ValidationError", 
-                    "message": "Missing JSON payload",
-                    "status": "NOTOK"
-                }), 400
-            
-            # Validate required fields
-            if required_fields:
-                missing_fields = [field for field in required_fields if field not in data or data[field] is None]
-                if missing_fields:
-                    return jsonify({
-                        "error": "ValidationError",
-                        "message": f"Missing required fields: {', '.join(missing_fields)}",
-                        "status": "NOTOK"
-                    }), 400
-            
-            # Validate using model class
-            if model_class:
-                try:
-                    # Create model instance and validate
-                    model_instance = model_class(**{k: v for k, v in data.items() if k in model_class.__dataclass_fields__})
-                    model_instance.validate()
-                    
-                    # Add validated model to kwargs
-                    kwargs['validated_data'] = model_instance
-                    
-                except (TypeError, ValueError) as e:
-                    return jsonify({
-                        "error": "ValidationError",
-                        "message": str(e),
-                        "status": "NOTOK"
-                    }), 400
-            
-            return func(*args, **kwargs)
-        
-        return wrapper
+        return func
     return decorator
 
 

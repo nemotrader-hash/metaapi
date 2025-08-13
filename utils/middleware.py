@@ -239,47 +239,28 @@ class RequestMetrics:
     """Simple request metrics collector."""
     
     def __init__(self):
-        self.metrics = {
-            "total_requests": 0,
-            "successful_requests": 0,
-            "failed_requests": 0,
-            "avg_response_time": 0.0,
-            "endpoints": defaultdict(lambda: {
-                "count": 0,
-                "avg_time": 0.0,
-                "errors": 0
-            })
-        }
+        self.total_requests = 0
+        self.successful_requests = 0
+        self.failed_requests = 0
+        self.start_time = time.time()
     
     def record_request(self, endpoint: str, response_time: float, success: bool):
-        """Record request metrics."""
-        self.metrics["total_requests"] += 1
-        
+        """Record basic request metrics."""
+        self.total_requests += 1
         if success:
-            self.metrics["successful_requests"] += 1
+            self.successful_requests += 1
         else:
-            self.metrics["failed_requests"] += 1
-        
-        # Update average response time
-        total = self.metrics["total_requests"]
-        current_avg = self.metrics["avg_response_time"]
-        self.metrics["avg_response_time"] = ((current_avg * (total - 1)) + response_time) / total
-        
-        # Update endpoint metrics
-        endpoint_stats = self.metrics["endpoints"][endpoint]
-        endpoint_stats["count"] += 1
-        
-        if not success:
-            endpoint_stats["errors"] += 1
-        
-        # Update endpoint average time
-        count = endpoint_stats["count"]
-        current_endpoint_avg = endpoint_stats["avg_time"]
-        endpoint_stats["avg_time"] = ((current_endpoint_avg * (count - 1)) + response_time) / count
+            self.failed_requests += 1
     
     def get_metrics(self) -> Dict[str, Any]:
-        """Get current metrics."""
-        return dict(self.metrics)
+        """Get basic metrics."""
+        uptime = time.time() - self.start_time
+        return {
+            "total_requests": self.total_requests,
+            "successful_requests": self.successful_requests,
+            "failed_requests": self.failed_requests,
+            "uptime_seconds": round(uptime, 2)
+        }
 
 
 # Global metrics instance

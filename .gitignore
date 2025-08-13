@@ -22,7 +22,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 
-# Environment variables
+# Environment variables (protect actual .env, but allow .env.example)
 .env
 .venv
 env/
@@ -51,11 +51,11 @@ Thumbs.db
 *.log
 log/*.log
 
-# Configuration files with sensitive data
-config.json
+# Local config (keep secrets out of git)
 config_local.json
-config_production.json
-config_live.json
+config.json
+config.production.json
+*.production.json
 
 # Instance configurations (may contain sensitive data)
 instances/

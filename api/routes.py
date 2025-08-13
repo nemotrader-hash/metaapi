@@ -25,7 +25,6 @@ from core.validators import (
     validate_telegram_alert_data
 )
 from utils.mt5_compat import MT5_Interface
-from utils.middleware import rate_limit, log_request_response, collect_metrics
 from log.logger import setup_logger
 from api.auth import authenticate
 
@@ -47,18 +46,16 @@ except Exception as e:
 
 
 def init_routes(app):
-    """Initialize all API routes with enhanced features."""
+    """Initialize API routes (simple, no middleware)."""
     
     @app.route('/', methods=['GET'])
-    @collect_metrics()
     def welcome():
-        """Welcome endpoint - enhanced with metrics while maintaining original format."""
+        """Welcome endpoint."""
         return jsonify({'message': 'Hello! Welcome to the MT5 Flask API 🚀'}), 200
     
     @app.route('/health', methods=['GET'])
-    @collect_metrics()
     def health_check():
-        """Health check endpoint - new enhanced feature."""
+        """Health check endpoint."""
         from datetime import datetime, timezone
         
         health_data = {
@@ -66,222 +63,22 @@ def init_routes(app):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "version": "2.0",
             "features": {
-                "middleware": True,
+                "middleware": False,
                 "validation": True,
-                "rate_limiting": True,
-                "metrics": True,
-                "backward_compatible": True
+                "rate_limiting": False,
+                "metrics": False,
+                "backward_compatible": True,
+                "advanced_trading": True
             }
         }
         
-        return jsonify({
-            'message': 'Service is healthy',
-            'data': health_data
-        }), 200
-    
-    @app.route('/metrics', methods=['GET'])
-    @authenticate
-    @collect_metrics()
-    def get_metrics():
-        """Get API metrics - new enhanced feature."""
-        from utils.middleware import request_metrics
-        
-        metrics_data = request_metrics.get_metrics()
-        
-        return jsonify({
-            'message': 'API metrics retrieved successfully',
-            'data': metrics_data
-        }), 200
+        return jsonify({'message': 'Service is healthy','data': health_data}), 200
 
-    @app.route('/mt5/info', methods=['GET'])
-    @authenticate
-    @rate_limit()
-    @collect_metrics()
-    def get_mt5_info():
-        """Get MT5 terminal information and status."""
-        try:
-            import MetaTrader5 as mt5
-            
-            # Get terminal and account info directly from MetaTrader5
-            terminal_info = mt5.terminal_info()
-            account_info = mt5.account_info()
-            
-            # Convert NamedTuple to dict for JSON serialization
-            terminal_dict = dict(terminal_info._asdict()) if terminal_info else None
-            account_dict = dict(account_info._asdict()) if account_info else None
-            
-            return jsonify({
-                "status": "success",
-                "message": "OK",
-                "data": {
-                    "terminal_info": terminal_dict,
-                    "account_info": account_dict,
-                    "connection_status": "connected" if terminal_info else "disconnected",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-            })
-            
-        except Exception as e:
-            logger.error(f"Error getting MT5 info: {e}")
-            return jsonify({
-                "error": f"Failed to get MT5 info: {str(e)}",
-                "message": "NOTOK"
-            }), 500
-
-    @app.route('/mt5/symbols', methods=['GET'])
-    @authenticate
-    @rate_limit()
-    @collect_metrics()
-    def get_mt5_symbols():
-        """Get available MT5 symbols."""
-        try:
-            import MetaTrader5 as mt5
-            
-            # Get all available symbols
-            symbols = mt5.symbols_get()
-            
-            if symbols:
-                # Convert symbols to list of dicts with basic info
-                symbols_list = []
-                for symbol in symbols:
-                    symbols_list.append({
-                        "name": symbol.name,
-                        "description": symbol.description,
-                        "path": symbol.path,
-                        "trade_mode": symbol.trade_mode,
-                        "visible": symbol.visible,
-                        "select": symbol.select
-                    })
-            else:
-                symbols_list = []
-            
-            return jsonify({
-                "status": "success",
-                "message": "OK",
-                "data": {
-                    "symbols": symbols_list,
-                    "symbol_count": len(symbols_list),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-            })
-            
-        except Exception as e:
-            logger.error(f"Error getting MT5 symbols: {e}")
-            return jsonify({
-                "error": f"Failed to get MT5 symbols: {str(e)}",
-                "message": "NOTOK"
-            }), 500
-
-    @app.route('/mt5/positions', methods=['GET'])
-    @authenticate
-    @rate_limit()
-    @collect_metrics()
-    def get_mt5_positions():
-        """Get current open positions."""
-        try:
-            import MetaTrader5 as mt5
-            
-            # Get all open positions
-            positions = mt5.positions_get()
-            
-            if positions:
-                # Convert positions to list of dicts
-                positions_list = []
-                for position in positions:
-                    positions_list.append({
-                        "ticket": position.ticket,
-                        "time": position.time,
-                        "symbol": position.symbol,
-                        "type": position.type,
-                        "volume": position.volume,
-                        "price_open": position.price_open,
-                        "sl": position.sl,
-                        "tp": position.tp,
-                        "price_current": position.price_current,
-                        "swap": position.swap,
-                        "profit": position.profit,
-                        "comment": position.comment,
-                        "identifier": position.identifier,
-                        "reason": position.reason
-                    })
-            else:
-                positions_list = []
-            
-            return jsonify({
-                "status": "success",
-                "message": "OK",
-                "data": {
-                    "positions": positions_list,
-                    "position_count": len(positions_list),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-            })
-            
-        except Exception as e:
-            logger.error(f"Error getting MT5 positions: {e}")
-            return jsonify({
-                "error": f"Failed to get MT5 positions: {str(e)}",
-                "message": "NOTOK"
-            }), 500
-
-    @app.route('/mt5/orders', methods=['GET'])
-    @authenticate
-    @rate_limit()
-    @collect_metrics()
-    def get_mt5_orders():
-        """Get current pending orders."""
-        try:
-            import MetaTrader5 as mt5
-            
-            # Get all pending orders
-            orders = mt5.orders_get()
-            
-            if orders:
-                # Convert orders to list of dicts
-                orders_list = []
-                for order in orders:
-                    orders_list.append({
-                        "ticket": order.ticket,
-                        "time_setup": order.time_setup,
-                        "symbol": order.symbol,
-                        "type": order.type,
-                        "volume_initial": order.volume_initial,
-                        "volume_current": order.volume_current,
-                        "price_open": order.price_open,
-                        "sl": order.sl,
-                        "tp": order.tp,
-                        "price_current": order.price_current,
-                        "comment": order.comment,
-                        "magic": order.magic,
-                        "time_expiration": order.time_expiration
-                    })
-            else:
-                orders_list = []
-            
-            return jsonify({
-                "status": "success",
-                "message": "OK",
-                "data": {
-                    "orders": orders_list,
-                    "order_count": len(orders_list),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-            })
-            
-        except Exception as e:
-            logger.error(f"Error getting MT5 orders: {e}")
-            return jsonify({
-                "error": f"Failed to get MT5 orders: {str(e)}",
-                "message": "NOTOK"
-            }), 500
 
     @app.route('/initialize_mt5_connection', methods=['POST'])
     @authenticate
-    @rate_limit()
-    @log_request_response(include_request_data=True)
-    @collect_metrics()
     def initialize_mt5_connection():
-        """Initialize MT5 connection - enhanced with validation while maintaining exact original format."""
+        """Initialize MT5 connection."""
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Missing JSON payload', "message": "NOTOK"}), 400
@@ -319,11 +116,8 @@ def init_routes(app):
 
     @app.route('/create_mt5_orders', methods=['POST'])
     @authenticate
-    @rate_limit()
-    @log_request_response(include_request_data=True)
-    @collect_metrics()
     def create_mt5_orders():
-        """Create MT5 orders - enhanced with validation while maintaining exact original format."""
+        """Create MT5 orders."""
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Missing JSON payload', "message": "NOTOK"}), 400
@@ -367,11 +161,8 @@ def init_routes(app):
 
     @app.route('/close_mt5_orders', methods=['POST'])
     @authenticate
-    @rate_limit()
-    @log_request_response(include_request_data=True)
-    @collect_metrics()
     def webhook_close_mt5_orders():
-        """Close MT5 orders - enhanced with validation while maintaining exact original format."""
+        """Close MT5 orders."""
         data = request.json
         if not data:
             return jsonify({'error': 'Missing JSON payload', "message": "NOTOK"}), 400
@@ -420,11 +211,8 @@ def init_routes(app):
 
     @app.route('/send_telegram_alert', methods=['POST'])
     @authenticate
-    @rate_limit()
-    @log_request_response(include_request_data=True)
-    @collect_metrics()
     def send_telegram_alert():
-        """Send Telegram alert - enhanced with validation while maintaining exact original format."""
+        """Send Telegram alert."""
         if not telegram_bot:
             return jsonify({'error': 'Telegram bot not configured', 'message': 'NOTOK'}), 500
             
@@ -469,3 +257,226 @@ def init_routes(app):
         except Exception as e:
             logger.error(f"Failed to send alert to Telegram: {e}")
             return jsonify({'error': f'Failed to send alert: {str(e)}', 'message': 'NOTOK'}), 500
+
+    # ======= NEW MT5 ENDPOINTS =======
+    
+    @app.route('/place_limit_order', methods=['POST'])
+    @authenticate
+    def place_limit_order():
+        """Place limit/stop orders."""
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Missing JSON payload', "message": "NOTOK"}), 400
+
+        # Required fields
+        required_fields = ['order_type', 'symbol', 'volume', 'price']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({'error': f'Missing required parameters: {", ".join(missing_fields)}', "message": "NOTOK"}), 400
+
+        order_type = data.get('order_type')  # BUY_LIMIT, SELL_LIMIT, BUY_STOP, SELL_STOP
+        symbol = data.get('symbol')
+        volume = float(data.get('volume'))
+        price = float(data.get('price'))
+        stop_loss = data.get('stop_loss', 0.0)
+        take_profit = data.get('take_profit', 0.0)
+        comment = data.get('comment', 'Limit/Stop order')
+
+        try:
+            mt5_interface = MT5_Interface(login=False, path=config.mt5_path)
+            
+            result = mt5_interface.place_limit_stop_order(
+                order_type=order_type,
+                symbol=symbol,
+                volume=volume,
+                price=price,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+                comment=comment
+            )
+            
+            if result:
+                return jsonify({'message': f'Successfully placed {order_type} order for {symbol}'}), 200
+            else:
+                return jsonify({'error': f'Failed to place {order_type} order for {symbol}', "message": "NOTOK"}), 400
+                
+        except Exception as e:
+            logger.exception(f"Error placing limit/stop order for {symbol}")
+            return jsonify({'error': f'Internal server error: {str(e)}', 'message': 'NOTOK'}), 500
+
+    @app.route('/get_positions', methods=['GET'])
+    @authenticate
+    def get_positions():
+        """Get open positions."""
+        symbol = request.args.get('symbol')  # Optional filter by symbol
+        
+        try:
+            mt5_interface = MT5_Interface(login=False, path=config.mt5_path)
+            
+            if symbol:
+                positions = mt5_interface.get_orders_position(symbol)
+            else:
+                # Get all positions by passing empty string
+                positions = mt5_interface.get_orders_position("")
+            
+            # Convert positions to dict format
+            positions_data = []
+            for pos in positions:
+                if hasattr(pos, 'to_dict'):
+                    positions_data.append(pos.to_dict())
+                else:
+                    positions_data.append(pos.__dict__)
+            
+            return jsonify({
+                'message': 'Positions retrieved successfully',
+                'positions': positions_data,
+                'count': len(positions_data)
+            }), 200
+            
+        except Exception as e:
+            logger.exception("Error retrieving positions")
+            return jsonify({'error': f'Failed to retrieve positions: {str(e)}', 'message': 'NOTOK'}), 500
+
+    @app.route('/get_account_info', methods=['GET'])
+    @authenticate
+    def get_account_info():
+        """Get account information."""
+        try:
+            mt5_interface = MT5_Interface(login=False, path=config.mt5_path)
+            account_info = mt5_interface.get_account_info()
+            
+            if account_info:
+                if hasattr(account_info, 'to_dict'):
+                    account_data = account_info.to_dict()
+                else:
+                    account_data = account_info.__dict__
+                
+                return jsonify({
+                    'message': 'Account info retrieved successfully',
+                    'account': account_data
+                }), 200
+            else:
+                return jsonify({'error': 'Failed to retrieve account information', 'message': 'NOTOK'}), 400
+                
+        except Exception as e:
+            logger.exception("Error retrieving account info")
+            return jsonify({'error': f'Failed to retrieve account info: {str(e)}', 'message': 'NOTOK'}), 500
+
+    @app.route('/cancel_all_orders', methods=['POST'])
+    @authenticate
+    def cancel_all_orders():
+        """Cancel all pending orders."""
+        try:
+            mt5_interface = MT5_Interface(login=False, path=config.mt5_path)
+            cancelled_orders = mt5_interface.cancel_all_open_orders()
+            
+            return jsonify({
+                'message': f'Successfully cancelled {len(cancelled_orders)} orders',
+                'cancelled_orders': cancelled_orders,
+                'count': len(cancelled_orders)
+            }), 200
+            
+        except Exception as e:
+            logger.exception("Error cancelling orders")
+            return jsonify({'error': f'Failed to cancel orders: {str(e)}', 'message': 'NOTOK'}), 500
+
+    @app.route('/modify_position_sltp', methods=['POST'])
+    @authenticate
+    def modify_position_sltp():
+        """Modify stop loss and take profit for a position."""
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Missing JSON payload', "message": "NOTOK"}), 400
+
+        ticket = data.get('ticket')
+        tp_price = data.get('take_profit')
+        sl_price = data.get('stop_loss')
+        
+        if not ticket:
+            return jsonify({'error': 'Missing required parameter: ticket', "message": "NOTOK"}), 400
+        
+        if tp_price is None and sl_price is None:
+            return jsonify({'error': 'At least one of take_profit or stop_loss must be provided', "message": "NOTOK"}), 400
+
+        try:
+            mt5_interface = MT5_Interface(login=False, path=config.mt5_path)
+            
+            # Get all positions to find the one with matching ticket
+            all_positions = mt5_interface.get_orders_position("")
+            position = None
+            for pos in all_positions:
+                if hasattr(pos, 'ticket') and pos.ticket == int(ticket):
+                    position = pos
+                    break
+            
+            if not position:
+                return jsonify({'error': f'Position with ticket {ticket} not found', "message": "NOTOK"}), 404
+            
+            result = mt5_interface.modify_order_sltp(
+                position=position,
+                tp_price=tp_price,
+                sl_price=sl_price
+            )
+            
+            if result:
+                return jsonify({'message': f'Successfully modified SL/TP for position {ticket}'}), 200
+            else:
+                return jsonify({'error': f'Failed to modify SL/TP for position {ticket}', "message": "NOTOK"}), 400
+                
+        except Exception as e:
+            logger.exception(f"Error modifying position {ticket}")
+            return jsonify({'error': f'Internal server error: {str(e)}', 'message': 'NOTOK'}), 500
+
+    @app.route('/get_symbol_info', methods=['GET'])
+    @authenticate
+    def get_symbol_info():
+        """Get symbol information."""
+        symbol = request.args.get('symbol')
+        if not symbol:
+            return jsonify({'error': 'Missing required parameter: symbol', "message": "NOTOK"}), 400
+        
+        try:
+            mt5_interface = MT5_Interface(login=False, path=config.mt5_path)
+            symbol_info = mt5_interface.get_symbol_info(symbol)
+            
+            if symbol_info:
+                if hasattr(symbol_info, 'to_dict'):
+                    symbol_data = symbol_info.to_dict()
+                else:
+                    symbol_data = symbol_info.__dict__
+                
+                return jsonify({
+                    'message': f'Symbol info for {symbol} retrieved successfully',
+                    'symbol_info': symbol_data
+                }), 200
+            else:
+                return jsonify({'error': f'Symbol {symbol} not found', 'message': 'NOTOK'}), 404
+                
+        except Exception as e:
+            logger.exception(f"Error retrieving symbol info for {symbol}")
+            return jsonify({'error': f'Failed to retrieve symbol info: {str(e)}', 'message': 'NOTOK'}), 500
+
+    @app.route('/get_terminal_info', methods=['GET'])
+    @authenticate
+    def get_terminal_info():
+        """Get MT5 terminal information."""
+        try:
+            mt5_interface = MT5_Interface(login=False, path=config.mt5_path)
+            terminal_info = mt5_interface.get_terminal_info()
+            
+            if terminal_info:
+                if hasattr(terminal_info, 'to_dict'):
+                    terminal_data = terminal_info.to_dict()
+                else:
+                    terminal_data = terminal_info.__dict__
+                
+                return jsonify({
+                    'message': 'Terminal info retrieved successfully',
+                    'terminal_info': terminal_data
+                }), 200
+            else:
+                return jsonify({'error': 'Failed to retrieve terminal information', 'message': 'NOTOK'}), 400
+                
+        except Exception as e:
+            logger.exception("Error retrieving terminal info")
+            return jsonify({'error': f'Failed to retrieve terminal info: {str(e)}', 'message': 'NOTOK'}), 500

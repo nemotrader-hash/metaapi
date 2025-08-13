@@ -288,6 +288,119 @@ python3 launcher.py start -i test_env --mt5-path "C:\\Program Files\\MetaTrader 
 - 📝 Log file (`instances/<name>.log`)
 - 🔢 Process ID tracking (`instances/<name>.pid`)
 
+## 🚀 **Single Server vs Multi-Instance: When to Use Each**
+
+### **Single Production Server** (Simple Deployment)
+```bash
+# Start one server for all trading
+python3 app.py --host 0.0.0.0 --port 8087
+```
+
+**What it is:**
+- **One server** running on one port (e.g., 8087)
+- **One configuration** file (`config.json`)
+- **One MT5 connection** per server
+- **All strategies** share the same API instance
+
+**Use When:**
+- ✅ You have **one trading strategy**
+- ✅ You're **learning or testing**
+- ✅ You want **simple deployment**
+- ✅ You have **limited resources**
+- ✅ You're doing **manual trading** with API assistance
+
+**Characteristics:**
+- ✅ Simple to manage and monitor
+- ✅ Lower resource usage
+- ✅ Easy configuration
+- ❌ Single point of failure
+- ❌ All strategies share same MT5 connection
+- ❌ If one part fails, everything stops
+
+### **Multi-Instance Support** (Professional Deployment)
+```bash
+# Start multiple independent servers
+python3 launcher.py start --instance scalping --port 8087
+python3 launcher.py start --instance swing --port 8088
+python3 launcher.py start --instance demo --port 8089
+```
+
+**What it is:**
+- **Multiple servers** running on different ports
+- **Separate configurations** for each instance
+- **Independent MT5 connections** (can use different accounts)
+- **Isolated strategies** that don't interfere with each other
+
+**Use When:**
+- ✅ You have **multiple trading strategies**
+- ✅ You want **different MT5 accounts** (demo + live)
+- ✅ You need **fault tolerance** (if one crashes, others continue)
+- ✅ You're running **professional trading operations**
+- ✅ You want **strategy isolation** and **risk separation**
+
+**Characteristics:**
+- ✅ **Fault tolerance** - strategies run independently
+- ✅ **Different accounts** - demo on 8087, live on 8088
+- ✅ **Strategy isolation** - scalping won't affect swing trading
+- ✅ **Load distribution** - spread across multiple processes
+- ✅ **Independent configs** - different settings per strategy
+- ❌ More complex to manage
+- ❌ Higher resource usage
+
+### **📊 Quick Comparison**
+
+| Aspect | Single Server | Multi-Instance |
+|--------|---------------|----------------|
+| **Complexity** | Simple | Advanced |
+| **Ports Used** | 1 (e.g., 8087) | Multiple (8087, 8088, 8089...) |
+| **Config Files** | 1 (`config.json`) | Multiple (`instances/name_config.json`) |
+| **MT5 Accounts** | 1 account | Multiple accounts possible |
+| **Failure Impact** | Everything stops | Only that instance stops |
+| **Resource Usage** | Low | Higher (multiple processes) |
+| **Management** | Direct Python commands | Launcher commands |
+| **Use Case** | Single strategy/testing | Multiple strategies/production |
+
+### **🎯 Real-World Example**
+
+**Single Server Setup:**
+```bash
+# Edit main config
+nano config.json
+
+# Start server (all trading through one API)
+python3 app.py --port 8087
+
+# All API calls: http://localhost:8087
+```
+
+**Multi-Instance Setup:**
+```bash
+# Scalping strategy (1-minute trades, demo account)
+python3 launcher.py start --instance scalping --port 8087
+
+# Swing trading (daily trades, live account)  
+python3 launcher.py start --instance swing --port 8088
+
+# News trading (event-based, different live account)
+python3 launcher.py start --instance news --port 8089
+
+# Each has independent API:
+# Scalping: http://localhost:8087
+# Swing:    http://localhost:8088  
+# News:     http://localhost:8089
+```
+
+### **💡 Recommendation**
+
+**Start Simple → Scale Up:**
+
+1. **Begin with Single Server** for learning and testing
+2. **Move to Multi-Instance** when you have multiple strategies
+3. **Use Professional Setup** for production trading operations
+
+**Single Server = One Strategy, One Account**  
+**Multi-Instance = Multiple Strategies, Multiple Accounts, Professional Operations**
+
 ## 🧪 Testing
 
 **Test backward compatibility:**

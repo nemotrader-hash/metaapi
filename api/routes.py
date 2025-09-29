@@ -198,7 +198,7 @@ def init_routes(app):
             return jsonify({'error': f'Failed to initialize MetaTrader 5: {str(e)}', 'message': 'NOTOK'}), 400
         
         except MT5TradingError as e:
-            if "No open positions found" in str(e):
+            if "no positions found" in str(e).lower():
                 logger.warning(f"Error Position Not Found for symbol {symbol}: {str(e)}")
                 return jsonify({'message': f'No open positions found for symbol: {symbol}'}), 200
             else:
